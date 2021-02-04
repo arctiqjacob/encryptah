@@ -1,4 +1,4 @@
-# encrypter
+# encryptah
 This is a two-tier application written in Go (backend) and Python (frontend). It takes in a user's input string and encrypts it with an AES-256 key and returns back the ciphertext.
 
 ![screenshot](images/screenshot.png)
