@@ -1,0 +1,54 @@
+<!DOCTYPE html>
+<html>
+    <head>
+        <!-- Required meta tags -->
+        <meta charset="utf-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+
+        <!-- Bootstrap CSS -->
+        <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0/css/bootstrap.min.css" integrity="sha384-Gn5384xqQ1aoWXA+058RXPxPg6fy4IWvTNh0E263XmFcJlSAwiGgFAW/dAiS6JXm" crossorigin="anonymous">
+        <title> Encryptah </title>
+    </head>
+    <body>
+        {% with messages = get_flashed_messages() %}
+        {% if messages %}
+        {% for message in messages %}
+        <div class="alert alert-warning" role="alert"><b>Warning: </b>{{ message }}</div>
+        {% endfor %}
+        {% endif %}
+        {% endwith %}
+        <div class="container d-flex justify-content-center" style="margin-top: 10%;">
+            <div class="col-md-8 order-md-1">
+                <form action="/" method="post">
+                    <div class="form-group">
+                        <img class="mx-auto d-block" src="static/hacker.png" width="150px" />
+                        <input class="form-control" type="text" name="message" placeholder="" required="" style="margin-top: 40px">
+                        <small id="messageHelp" class="form-text text-muted">Input data you want to encrypt or decrypt.</small>
+                    </div>
+                    {% if ciphertext %}<p class="mb-0"><b>Ciphertext:</b> {{ ciphertext }}</p>{% endif %}
+                    {% if plaintext %}<p class="mb-0"><b>Plaintext:</b> {{ plaintext }}</p>{% endif %}
+                    <hr class="mb-4">
+                    <div class="row">
+                        {% with messages = get_flashed_messages() %}
+                        {% if messages %}
+                        <div class="col-md-6 mb-3">
+                            <button class="btn btn-secondary btn-lg btn-block" type="submit" name="submit" value="encrypt" disabled>Encrypt</button>
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <button class="btn btn-secondary btn-lg btn-block" type="submit" name="submit" value="decrypt" disabled>Decrypt</button>
+                        </div>
+                        {% else %}
+                        <div class="col-md-6 mb-3">
+                            <button class="btn btn-success btn-lg btn-block" type="submit" name="submit" value="encrypt">Encrypt</button>
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <button class="btn btn-danger btn-lg btn-block" type="submit" name="submit" value="decrypt">Decrypt</button>
+                        </div>
+                        {% endif %}
+                        {% endwith %}
+                    </div>
+                </form>
+            </div>
+        </div>
+    </body>
+</html>

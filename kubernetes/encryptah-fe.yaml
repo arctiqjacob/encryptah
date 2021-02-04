@@ -1,0 +1,37 @@
+---
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: encryptah-fe-sa
+---
+apiVersion: v1
+kind: Pod
+metadata:
+  name: encryptah-fe
+  labels:
+    app: encryptah-fe
+spec:
+  containers:
+    - name: encryptah-fe
+      image: jacobmammoliti/encryptah-fe:0.1
+      imagePullPolicy: Always
+      ports:
+        - containerPort: 8080
+          name: http
+      env:
+        - name: BACKEND_HOSTNAME
+          value: encryptah-be
+  serviceAccountName: encryptah-fe-sa
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: encryptah-fe
+spec:
+  selector:
+    app: encryptah-fe
+  ports:
+    - protocol: TCP
+      port: 8080
+      targetPort: 8080
+      name: http
