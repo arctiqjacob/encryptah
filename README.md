@@ -6,29 +6,29 @@ This is a two-tier application written in Go (backend) and Python (frontend). It
 ## Build Docker Images Manually
 ```bash
 # build the docker image for the backend
-$ docker build --tag jacobmammoliti/encrypter-be:0.1 src/backend/
+$ docker build --tag jacobmammoliti/encryptah-be:0.1 src/backend/
 
 # push it to dockerhub
-$ docker push jacobmammoliti/encrypter-be:0.1
+$ docker push jacobmammoliti/encryptah-be:0.1
 
 # build the docker image for the frontend
-$ docker build --tag jacobmammoliti/encrypter-fe:0.1 src/frontend/
+$ docker build --tag jacobmammoliti/encryptah-fe:0.1 src/frontend/
 
 # push it to dockerhub
-$ docker push jacobmammoliti/encrypter-fe:0.1
+$ docker push jacobmammoliti/encryptah-fe:0.1
 ```
 
 ## Deploy to Kubernetes
 ```bash
 # deploy the backend
-$ kubectl apply -f kubernetes/encrypter-be.yaml
-serviceaccount/encrypter-fe-sa created
-pod/encrypter-be created
-service/encrypter-be created
+$ kubectl apply -f kubernetes/encryptah-be.yaml
+serviceaccount/encryptah-fe-sa created
+pod/encryptah-be created
+service/encryptah-be created
 
 # deploy the frontend
-$ kubectl apply -f kubernetes/encrypter-fe.yaml
-serviceaccount/encrypter-fe-sa unchanged
-pod/encrypter-fe created
-service/encrypter-fe created
+$ kubectl apply -f kubernetes/encryptah-fe.yaml
+serviceaccount/encryptah-fe-sa unchanged
+pod/encryptah-fe created
+service/encryptah-fe created
 ```
