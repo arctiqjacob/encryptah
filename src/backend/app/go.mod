@@ -1,5 +1,5 @@
 module github.com/arctiqjacob/crypto/src/backend
 
-go 1.15
+go 1.16
 
-require github.com/gorilla/mux v1.8.0
+require github.com/gofiber/fiber/v2 v2.7.1
