@@ -54,15 +54,5 @@ $  docker buildx build --push -t jacobmammoliti/encryptah-backend:1.0 --platform
 
 ## Deploy to Kubernetes
 ```bash
-# deploy the backend
-$ kubectl apply -f kubernetes/encryptah-be.yaml
-serviceaccount/encryptah-fe-sa created
-pod/encryptah-be created
-service/encryptah-be created
-
-# deploy the frontend
-$ kubectl apply -f kubernetes/encryptah-fe.yaml
-serviceaccount/encryptah-fe-sa unchanged
-pod/encryptah-fe created
-service/encryptah-fe created
+$ kubectl apply -f kubernetes/encryptah.yaml
 ```
