@@ -11,12 +11,12 @@ gunicorn_logger = logging.getLogger('gunicorn.error')
 app.logger.handlers = gunicorn_logger.handlers
 app.logger.setLevel(gunicorn_logger.level)
 
-backendHostname = 'encryptah-be' if (os.environ.get('BACKEND_HOSTNAME') is None) else os.environ.get('BACKEND_HOSTNAME')
+backendHostname = 'backend' if (os.environ.get('BACKEND_HOSTNAME') is None) else os.environ.get('BACKEND_HOSTNAME')
 backendPort = '5678' if (os.environ.get('BACKEND_PORT_NUMBER') is None) else os.environ.get('BACKEND_PORT_NUMBER')
 
 backend = {
   'name': 'http://{0}:{1}'.format(backendHostname, backendPort),
-  'endpoint': 'encryptah-be',
+  'endpoint': backendHostname,
   'api': '/api/v1/'
 }
 
@@ -28,7 +28,7 @@ def index():
   # ensure connectivity to backend service
   try:
     app.logger.info('trying backend at {}'.format(backend['name']))
-    requests.get(backend['name'] + '/healthz')
+    requests.get(backend['name'] + '/health')
     app.logger.info('successfully connected to backend at {}'.format(backend['name']))
   except:
     app.logger.error('failed connecting to backend at {}'.format(backend['name']))
@@ -64,8 +64,8 @@ def index():
 
   return render_template('index.html', ciphertext=ciphertext, plaintext=plaintext)
 
-@app.route('/healthz')
-def healthz():
+@app.route('/health')
+def health():
   return json.loads('{ "status": "OK" }')
 
 if __name__ == '__main__':

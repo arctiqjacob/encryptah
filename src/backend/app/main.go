@@ -88,12 +88,12 @@ func cleanup() {
 }
 
 func setupRoutes(app *fiber.App) {
-  app.Get("/healthz", healthz)
+  app.Get("/health", health)
   app.Post("/api/v1/encrypt", encryptSecret)
   app.Post("/api/v1/decrypt", decryptSecret)
 }
 
-func healthz(c *fiber.Ctx) error {
+func health(c *fiber.Ctx) error {
   log.Printf("[INFO] %s %s -> %s via %s", c.Protocol(), c.IP(), c.Path(), c.Method())
 
   // return healthy OK
