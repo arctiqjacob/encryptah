@@ -45,7 +45,7 @@ spec:
           livenessProbe:
             failureThreshold: 3
             httpGet:
-              path: /healthz
+              path: /health
               port: 5678
               scheme: HTTP
             initialDelaySeconds: 3
@@ -55,7 +55,7 @@ spec:
           readinessProbe:
             failureThreshold: 3
             httpGet:
-              path: /healthz
+              path: /health
               port: 5678
               scheme: HTTP
             initialDelaySeconds: 3
@@ -101,7 +101,7 @@ spec:
           livenessProbe:
             failureThreshold: 3
             httpGet:
-              path: /healthz
+              path: /health
               port: 8080
               scheme: HTTP
             initialDelaySeconds: 3
@@ -111,7 +111,7 @@ spec:
           readinessProbe:
             failureThreshold: 3
             httpGet:
-              path: /healthz
+              path: /health
               port: 8080
               scheme: HTTP
             initialDelaySeconds: 3
@@ -157,7 +157,7 @@ spec:
           livenessProbe:
             failureThreshold: 3
             httpGet:
-              path: /healthz
+              path: /health
               port: 8080
               scheme: HTTP
             initialDelaySeconds: 3
@@ -167,7 +167,7 @@ spec:
           readinessProbe:
             failureThreshold: 3
             httpGet:
-              path: /healthz
+              path: /health
               port: 8080
               scheme: HTTP
             initialDelaySeconds: 3
