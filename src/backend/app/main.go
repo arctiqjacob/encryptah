@@ -6,6 +6,8 @@ import (
 	"crypto/rand"
 	"fmt"
 	"log"
+
+	"github.com/gofiber/fiber/v2"
 )
 
 var AESGCM cipher.AEAD
@@ -15,35 +17,45 @@ type Secret struct {
 	CipherText []byte `json:"ciphertext"`
 }
 
-// GenerateKey is used to generate a new key
-func GenerateKey() ([]byte, error) {
-	// Generate a 256bit buffer
-	buf := make([]byte, 2*aes.BlockSize)
-
-	// Populate buffer with random bytes
-	_, err := rand.Read(buf)
+// Initalize generates an encryption key and the AES-GCM
+func initalize() error {
+	key, err := GenerateKey()
 	if err != nil {
-		return nil, fmt.Errorf("failed to generate encryption key: %w", err)
+		return err
 	}
 
-	return buf, nil
+	AESGCM, err = aeadFromKey(key)
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
+// GenerateKey is used to generate a new key
+func GenerateKey() ([]byte, error) {
+	// Generate a 256bit key
+	buf := make([]byte, 2*aes.BlockSize)
+	_, err := rand.Read(buf)
+
+	return buf, err
 }
 
 // aeadFromKey returns an AES-GCM AEAD using the given key.
 func aeadFromKey(key []byte) (cipher.AEAD, error) {
 	// Create the AES cipher
-	aesCipher, err := aes.NewCipher(key)
+	block, err := aes.NewCipher(key)
 	if err != nil {
 		return nil, fmt.Errorf("failed to create cipher: %w", err)
 	}
 
 	// Create the GCM mode AEAD
-	aesgcm, err := cipher.NewGCM(aesCipher)
+	gcm, err := cipher.NewGCM(block)
 	if err != nil {
 		return nil, fmt.Errorf("failed to initalize GCM mode")
 	}
 
-	return aesgcm, nil
+	return gcm, nil
 }
 
 // encrypt is used to encrypt a value
@@ -71,29 +83,29 @@ func (s *Secret) decrypt(cipherText []byte, gcm cipher.AEAD) ([]byte, error) {
 }
 
 func main() {
-	key, err := GenerateKey()
-	if err != nil {
+	// Initalize encryption key and AES-GCM
+	if err := initalize(); err != nil {
 		log.Printf(err.Error())
 	}
 
-	AESGCM, err := aeadFromKey(key)
+	app := fiber.New()
+
+	setupRoutes(app)
+
+	s := new(Secret)
+
+	var err error
+	s.CipherText, err = s.encrypt([]byte("hello world"), AESGCM)
+
+	fmt.Printf("Ciphertext: %x", s.CipherText)
+
+	s.PlainText, err = s.decrypt([]byte(s.CipherText), AESGCM)
 	if err != nil {
-		log.Printf(err.Error())
+		fmt.Print("decryption fail: %w", err)
 	}
 
-	s := &Secret{PlainText: []byte("hello world")}
+	fmt.Printf("\nPlaintext: %s", s.PlainText)
 
-	ciphertext, err := s.encrypt(s.PlainText, AESGCM)
-	if err != nil {
-		log.Printf(err.Error())
-	}
+	log.Fatal(app.Listen(":5678"))
 
-	plaintext, err := s.decrypt(ciphertext, AESGCM)
-	if err != nil {
-		log.Printf(err.Error())
-	}
-
-	fmt.Printf("Using encryption key: %x\n", key)
-	fmt.Printf("Ciphertext: %x\n", ciphertext)
-	fmt.Printf("Plaintext: %s", plaintext)
 }
