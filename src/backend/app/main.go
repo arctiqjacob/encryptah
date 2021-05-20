@@ -1,141 +1,99 @@
 package main
 
 import (
-  "crypto/aes"
-  "crypto/cipher"
-  "crypto/rand"
-  "encoding/hex"
-  "fmt"
-  "github.com/gofiber/fiber/v2"
-  "io"
-  "log"
+	"crypto/aes"
+	"crypto/cipher"
+	"crypto/rand"
+	"fmt"
+	"log"
 )
 
+var AESGCM cipher.AEAD
+
 type Secret struct {
-  PlainText  string `json:"plaintext"`
-  CipherText string `json:"ciphertext"`
+	PlainText  []byte `json:"plaintext"`
+	CipherText []byte `json:"ciphertext"`
 }
 
-// Generate a random 32 byte key for AES-256 and encode to String
-var key = make([]byte, 32)
+// GenerateKey is used to generate a new key
+func GenerateKey() ([]byte, error) {
+	// Generate a 256bit buffer
+	buf := make([]byte, 2*aes.BlockSize)
 
-func encrypt(plainText string, encryptionKey []byte) (cipherText string) {
-  defer cleanup()
+	// Populate buffer with random bytes
+	_, err := rand.Read(buf)
+	if err != nil {
+		return nil, fmt.Errorf("failed to generate encryption key: %w", err)
+	}
 
-  // generate a new AES Cipher block using the 32 byte long key
-  block, err := aes.NewCipher(encryptionKey)
-  if err != nil {
-    log.Printf("[ERROR] %s", err)
-  }
-
-  // gcm or Galois/Counter Mode, is a mode of operation
-  // for symmetric key cryptographic block ciphers
-  // - https://en.wikipedia.org/wiki/Galois/Counter_Mode
-  gcm, err := cipher.NewGCM(block)
-  if err != nil {
-    log.Printf("[ERROR] %s", err)
-  }
-
-  // creates a new byte array the size of the nonce
-  // which must be passed to Seal
-  nonce := make([]byte, gcm.NonceSize())
-  if _, err = io.ReadFull(rand.Reader, nonce); err != nil {
-    log.Printf("[ERROR] %s", err)
-  }
-
-  // return ciphertext
-  return fmt.Sprintf("%x", gcm.Seal(nonce, nonce, []byte(plainText), nil))
+	return buf, nil
 }
 
-func decrypt(ciphertext string, encryptionKey []byte) (plaintext string) {
-  defer cleanup()
+// aeadFromKey returns an AES-GCM AEAD using the given key.
+func aeadFromKey(key []byte) (cipher.AEAD, error) {
+	// Create the AES cipher
+	aesCipher, err := aes.NewCipher(key)
+	if err != nil {
+		return nil, fmt.Errorf("failed to create cipher: %w", err)
+	}
 
-  decodedCiphertext, _ := hex.DecodeString(ciphertext)
+	// Create the GCM mode AEAD
+	aesgcm, err := cipher.NewGCM(aesCipher)
+	if err != nil {
+		return nil, fmt.Errorf("failed to initalize GCM mode")
+	}
 
-  // generate a new AES Cipher block using the 32 byte long key
-  block, err := aes.NewCipher(encryptionKey)
-  if err != nil {
-    log.Printf("[ERROR] %s", err)
-  }
-
-  // create a new GCM
-  gcm, err := cipher.NewGCM(block)
-  if err != nil {
-    log.Printf("[ERROR] %s", err)
-  }
-
-  // get the nonce size
-  nonceSize := gcm.NonceSize()
-
-  // extract the nonce from the encrypted data
-  nonce, cipher := decodedCiphertext[:nonceSize], decodedCiphertext[nonceSize:]
-
-  // decrypt the data
-  p, err := gcm.Open(nil, nonce, cipher, nil)
-  if err != nil {
-    log.Printf("[ERROR] %s", err)
-  }
-
-  // return plaintext
-  return string(p)
+	return aesgcm, nil
 }
 
-func cleanup() {
-  // recovers from a panic and logs the error
-  if r := recover(); r != nil {
-    log.Printf("[ERROR] %s", r)
-  }
+// encrypt is used to encrypt a value
+func (s *Secret) encrypt(plainText []byte, gcm cipher.AEAD) ([]byte, error) {
+	// Generate a random nonce
+	nonce := make([]byte, gcm.NonceSize())
+	n, err := rand.Read(nonce)
+	if err != nil {
+		return nil, fmt.Errorf("%w", err)
+	}
+	if n != len(nonce) {
+		return nil, fmt.Errorf("unable to read enough random bytes to fill gcm nonce")
+	}
+
+	// Seal the output
+	return gcm.Seal(nonce, nonce, plainText, nil), nil
 }
 
-func setupRoutes(app *fiber.App) {
-  app.Get("/health", health)
-  app.Post("/api/v1/encrypt", encryptSecret)
-  app.Post("/api/v1/decrypt", decryptSecret)
-}
+// decrypt is used to decrypt a value
+func (s *Secret) decrypt(cipherText []byte, gcm cipher.AEAD) ([]byte, error) {
+	// Capture the parts
+	nonce, cipher := cipherText[:gcm.NonceSize()], cipherText[gcm.NonceSize():]
 
-func health(c *fiber.Ctx) error {
-  log.Printf("[INFO] %s %s -> %s via %s", c.Protocol(), c.IP(), c.Path(), c.Method())
-
-  // return healthy OK
-  return c.JSON("OK")
-}
-
-func encryptSecret(c *fiber.Ctx) error {
-  log.Printf("[INFO] %s %s -> %s via %s", c.Protocol(), c.IP(), c.Path(), c.Method())
-
-  // create a new instance of Secret struct
-  s := new(Secret)
-
-  // parse JSON body into above struct
-  if err := c.BodyParser(s); err != nil {
-    return err
-  }
-
-  s.CipherText = encrypt(s.PlainText, key)
-
-  return c.JSON(s)
-}
-
-func decryptSecret(c *fiber.Ctx) error {
-  log.Printf("[INFO] %s %s -> %s via %s", c.Protocol(), c.IP(), c.Path(), c.Method())
-
-  // create a new instance of Secret struct
-  s := new(Secret)
-
-  // parse JSON body into above struct
-  if err := c.BodyParser(s); err != nil {
-    return err
-  }
-
-  s.PlainText = decrypt(s.CipherText, key)
-
-  return c.JSON(s)
+	return gcm.Open(nil, nonce, cipher, nil)
 }
 
 func main() {
-  app := fiber.New()
+	key, err := GenerateKey()
+	if err != nil {
+		log.Printf(err.Error())
+	}
 
-  setupRoutes(app)
+	AESGCM, err := aeadFromKey(key)
+	if err != nil {
+		log.Printf(err.Error())
+	}
 
-  log.Fatal(app.Listen(":5678"))
+	s := &Secret{PlainText: []byte("hello world")}
+
+	ciphertext, err := s.encrypt(s.PlainText, AESGCM)
+	if err != nil {
+		log.Printf(err.Error())
+	}
+
+	plaintext, err := s.decrypt(ciphertext, AESGCM)
+	if err != nil {
+		log.Printf(err.Error())
+	}
+
+	fmt.Printf("Using encryption key: %x\n", key)
+	fmt.Printf("Ciphertext: %x\n", ciphertext)
+	fmt.Printf("Plaintext: %s", plaintext)
 }
