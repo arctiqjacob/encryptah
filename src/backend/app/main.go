@@ -95,7 +95,8 @@ func main() {
 
 	app := fiber.New()
 
-	setupRoutes(app)
-
+	setupRoutes(app) 
+  
+  // Start server
 	log.Fatal(app.Listen(":5678"))
 }
