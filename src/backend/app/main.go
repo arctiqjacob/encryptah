@@ -4,6 +4,7 @@ import (
 	"crypto/aes"
 	"crypto/cipher"
 	"crypto/rand"
+	"encoding/hex"
 	"fmt"
 	"log"
 
@@ -13,8 +14,8 @@ import (
 var AESGCM cipher.AEAD
 
 type Secret struct {
-	PlainText  []byte `json:"plaintext"`
-	CipherText []byte `json:"ciphertext"`
+	PlainText  string `json:"plaintext"`
+	CipherText string `json:"ciphertext"`
 }
 
 // Initalize generates an encryption key and the AES-GCM
@@ -59,27 +60,31 @@ func aeadFromKey(key []byte) (cipher.AEAD, error) {
 }
 
 // encrypt is used to encrypt a value
-func (s *Secret) encrypt(plainText []byte, gcm cipher.AEAD) ([]byte, error) {
+func (s *Secret) encrypt(plainText string, gcm cipher.AEAD) (string, error) {
 	// Generate a random nonce
 	nonce := make([]byte, gcm.NonceSize())
 	n, err := rand.Read(nonce)
 	if err != nil {
-		return nil, fmt.Errorf("%w", err)
+		return "", fmt.Errorf("%w", err)
 	}
 	if n != len(nonce) {
-		return nil, fmt.Errorf("unable to read enough random bytes to fill gcm nonce")
+		return "", fmt.Errorf("unable to read enough random bytes to fill gcm nonce")
 	}
 
 	// Seal the output
-	return gcm.Seal(nonce, nonce, plainText, nil), nil
+	return fmt.Sprintf("%x", gcm.Seal(nonce, nonce, []byte(plainText), nil)), nil
 }
 
 // decrypt is used to decrypt a value
-func (s *Secret) decrypt(cipherText []byte, gcm cipher.AEAD) ([]byte, error) {
-	// Capture the parts
-	nonce, cipher := cipherText[:gcm.NonceSize()], cipherText[gcm.NonceSize():]
+func (s *Secret) decrypt(cipherText string, gcm cipher.AEAD) (string, error) {
+	decodedCiphertext, _ := hex.DecodeString(cipherText)
 
-	return gcm.Open(nil, nonce, cipher, nil)
+	// Capture the parts
+	nonce, cipher := decodedCiphertext[:gcm.NonceSize()], decodedCiphertext[gcm.NonceSize():]
+
+	plaintext, err := gcm.Open(nil, nonce, cipher, nil)
+
+	return string(plaintext), err
 }
 
 func main() {
@@ -91,20 +96,6 @@ func main() {
 	app := fiber.New()
 
 	setupRoutes(app)
-
-	s := new(Secret)
-
-	var err error
-	s.CipherText, err = s.encrypt([]byte("hello world"), AESGCM)
-
-	fmt.Printf("Ciphertext: %x", s.CipherText)
-
-	s.PlainText, err = s.decrypt([]byte(s.CipherText), AESGCM)
-	if err != nil {
-		fmt.Print("decryption fail: %w", err)
-	}
-
-	fmt.Printf("\nPlaintext: %s", s.PlainText)
 
 	log.Fatal(app.Listen(":5678"))
 
