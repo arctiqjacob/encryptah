@@ -30,14 +30,11 @@ func encryptSecret(c *fiber.Ctx) error {
 		log.Printf(err.Error())
 	}
 
-	// fmt.Printf("%s\n", []byte(body.PlainText))
-
+	// Send plaintext to get encrypted and return ciphertext
 	s.CipherText, err = s.encrypt(s.PlainText, AESGCM)
 	if err != nil {
 		return err
 	}
-
-	// fmt.Printf("%x", s.CipherText)
 
 	return c.Status(fiber.StatusOK).JSON(fiber.Map{
 		"ciphertext": s.CipherText,
@@ -55,6 +52,7 @@ func decryptSecret(c *fiber.Ctx) error {
 		log.Printf(err.Error())
 	}
 
+	// Send ciphertext to get decrypted and return plaintext
 	s.PlainText, err = s.decrypt(s.CipherText, AESGCM)
 	if err != nil {
 		return err

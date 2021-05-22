@@ -59,7 +59,7 @@ func aeadFromKey(key []byte) (cipher.AEAD, error) {
 	return gcm, nil
 }
 
-// encrypt is used to encrypt a value
+// encrypt returns a plaintext value encrypted
 func (s *Secret) encrypt(plainText string, gcm cipher.AEAD) (string, error) {
 	// Generate a random nonce
 	nonce := make([]byte, gcm.NonceSize())
@@ -75,7 +75,7 @@ func (s *Secret) encrypt(plainText string, gcm cipher.AEAD) (string, error) {
 	return fmt.Sprintf("%x", gcm.Seal(nonce, nonce, []byte(plainText), nil)), nil
 }
 
-// decrypt is used to decrypt a value
+// decrypt returns a string of ciphertext decrypted
 func (s *Secret) decrypt(cipherText string, gcm cipher.AEAD) (string, error) {
 	decodedCiphertext, _ := hex.DecodeString(cipherText)
 
